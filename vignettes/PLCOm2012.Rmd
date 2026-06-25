@@ -1,0 +1,139 @@
+---
+title: "Estimating 6-year lung cancer risk with PLCOm2012"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Estimating 6-year lung cancer risk with PLCOm2012}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(PLCOm2012)
+```
+
+## What this package does
+
+`PLCOm2012` implements the lung cancer risk model of Tammemägi et al.
+(*NEJM* 2013). Given an ever-smoker's age, race/ethnicity, education, BMI,
+COPD status, personal and family cancer history, and smoking history, it returns
+the **6-year probability of a first lung cancer**.
+
+There are two ways to use it:
+
+* `plcom2012()` — the vectorised model function, for analysis in R.
+* `model_run()` / `get_sample_input()` / `get_default_input()` — the
+  ModelsCloud prediction API, for hosting the model as a service.
+
+## Scoring one person
+
+```{r}
+plcom2012(
+  age = 62, race = "White", education = 4, bmi = 27,
+  copd = 0, cancer_hist = 0, family_hist_lung_cancer = 0,
+  smoking_status = 0, smoking_intensity = 20,
+  duration_smoking = 27, smoking_quit_time = 10
+)
+```
+
+Heavier exposure and comorbidity raise the estimate:
+
+```{r}
+plcom2012(
+  age = 70, race = "White", education = 2, bmi = 24,
+  copd = 1, cancer_hist = 0, family_hist_lung_cancer = 1,
+  smoking_status = 1, smoking_intensity = 40,
+  duration_smoking = 45, smoking_quit_time = 0
+)
+```
+
+## Scoring a cohort
+
+`plcom2012()` is fully vectorised — pass vectors and scalars are recycled:
+
+```{r}
+cohort <- data.frame(
+  age               = c(58, 64, 72),
+  race              = c("White", "Black", "Asian"),
+  education         = c(5, 2, 4),
+  bmi               = c(22, 28, 25),
+  copd              = c(0, 1, 0),
+  cancer_hist       = c(0, 0, 1),
+  family_hist       = c(0, 1, 0),
+  smoking_status    = c(0, 1, 0),
+  smoking_intensity = c(15, 35, 20),
+  duration_smoking  = c(30, 44, 35),
+  quit_time         = c(8, 0, 12)
+)
+
+cohort$risk <- plcom2012(
+  age = cohort$age, race = cohort$race, education = cohort$education,
+  bmi = cohort$bmi, copd = cohort$copd, cancer_hist = cohort$cancer_hist,
+  family_hist_lung_cancer = cohort$family_hist,
+  smoking_status = cohort$smoking_status,
+  smoking_intensity = cohort$smoking_intensity,
+  duration_smoking = cohort$duration_smoking,
+  smoking_quit_time = cohort$quit_time
+)
+cohort[, c("age", "race", "risk")]
+```
+
+## Using the ModelsCloud API
+
+The same package exposes the standard ModelsCloud prediction interface. Start
+from a worked example or the default baseline patient and modify it:
+
+```{r}
+get_default_input()
+
+patient <- get_default_input()
+patient$age  <- 68
+patient$copd <- 1
+model_run(patient)
+```
+
+`model_run()` returns the input augmented with `risk` (probability) and
+`risk_percent`:
+
+```{r}
+model_run(get_sample_input())
+```
+
+## Race / ethnicity coding
+
+`race` accepts case-insensitive labels (with common aliases) or numeric codes:
+
+| Code | Category | Aliases |
+|--|--|--|
+| 1 | White | Caucasian, Non-Hispanic White |
+| 2 | Black | African American |
+| 3 | Hispanic | Latino, Latina |
+| 4 | Asian | |
+| 5 | American Indian or Alaskan Native | American Indian, Alaskan Native, Indigenous |
+| 6 | Native Hawaiian or Pacific Islander | Native Hawaiian, Pacific Islander, Hawaiian |
+
+```{r}
+identical(
+  plcom2012(age = 60, race = "African American", education = 3, bmi = 26,
+            copd = 0, cancer_hist = 0, family_hist_lung_cancer = 0,
+            smoking_status = 1, smoking_intensity = 20,
+            duration_smoking = 30, smoking_quit_time = 0),
+  plcom2012(age = 60, race = 2, education = 3, bmi = 26,
+            copd = 0, cancer_hist = 0, family_hist_lung_cancer = 0,
+            smoking_status = 1, smoking_intensity = 20,
+            duration_smoking = 30, smoking_quit_time = 0)
+)
+```
+
+## Caveats
+
+* The model is for **ever-smokers**; `smoking_intensity` must be > 0.
+* Risk is a probability; eligibility thresholds (e.g. ≥1.5%) are a separate,
+  program-specific decision and are intentionally **not** applied here.
+* For research use only — not a medical device.
+
+## Reference
+
+Tammemägi MC, Katki HA, Hocking WG, et al. Selection criteria for lung-cancer
+screening. *N Engl J Med.* 2013;368(8):728–736.
+doi:[10.1056/NEJMoa1211776](https://doi.org/10.1056/NEJMoa1211776)

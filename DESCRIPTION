@@ -1,0 +1,32 @@
+Package: PLCOm2012
+Title: PLCOm2012 Lung Cancer Risk Model for the ModelsCloud Platform
+Version: 0.1.0
+Authors@R: c(
+    person("Ramin", "Rezaeianzadeh", email = "raminrzn@student.ubc.ca",
+           role = c("aut", "cre")),
+    person("Martin C.", "Tammemägi", role = "ctb",
+           comment = "Author of the original PLCOm2012 model"))
+Description: A self-contained, dependency-free implementation of the PLCOm2012
+    logistic risk model, which predicts the 6-year probability of a first lung
+    cancer in ever-smokers from age, race/ethnicity, education, body-mass index,
+    chronic obstructive pulmonary disease, personal cancer history, family
+    history of lung cancer, and detailed smoking history (Tammemägi et al.,
+    New England Journal of Medicine, 2013, <doi:10.1056/NEJMoa1211776>). The
+    package exposes both the vectorised model function plcom2012() and the
+    standard ModelsCloud prediction API (model_run(), get_sample_input(),
+    get_default_input()) so it can be used interactively in R or deployed as a
+    hosted model on the ModelsCloud platform.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    utils
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+URL: https://github.com/raminrzn/PLCOm2012
+BugReports: https://github.com/raminrzn/PLCOm2012/issues
