@@ -154,6 +154,34 @@ connect_to_model("raminrzn/plcom2012", access_key = "YOUR_API_KEY")
 result <- model_run(get_sample_input())
 ```
 
+**Flexible input.** `model_run()` is forgiving about payload shape, so it works
+with the `modelscloud` client *and* with raw API calls:
+
+* Fields may be **wrapped** under `model_input` or passed as **top-level**
+  named arguments (`do.call(model_run, funcInput)` style).
+* Common aliases are understood: `edu6`→`education`, `cpd`→`smoking_intensity`,
+  `smkyears`→`duration_smoking`, `qtyears`→`smoking_quit_time`,
+  `phist`→`cancer_hist`, `famhx`→`family_hist_lung_cancer`,
+  `smkstat`→`smoking_status`.
+* Unknown extra fields (e.g. `female`, which PLCOm2012 doesn't use) are
+  ignored, and race code `0` is treated as the White reference.
+
+### Raw HTTP
+
+The ModelsCloud executor runs `do.call(model_run, funcInput)`, so wrap the
+fields under `model_input`:
+
+```bash
+curl -X POST https://core.modelscloud.resp.core.ubc.ca/call/<ns>/plcom2012 \
+  -H "Authorization: Bearer <ACCESS_KEY_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"funcInput": {"model_input": {
+        "age": 62, "race": 1, "education": 3, "bmi": 27, "copd": 0,
+        "cancer_hist": 0, "family_hist_lung_cancer": 1, "smoking_status": 1,
+        "smoking_intensity": 20, "duration_smoking": 40, "smoking_quit_time": 0
+      }}}'
+```
+
 ---
 
 ## Clinical interpretation

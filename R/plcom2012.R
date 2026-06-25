@@ -79,9 +79,10 @@
 # Map a race vector (character aliases or numeric codes 1-6) to log-odds betas.
 .plco_race_beta <- function(race) {
   if (is.numeric(race)) {
+    race[race == 0] <- 1L  # 0 accepted as a synonym for the White reference
     if (any(!race %in% seq_along(.plco_race_codes), na.rm = TRUE)) {
-      stop("Numeric `race` codes must be 1-6: ",
-           "1 White, 2 Black, 3 Hispanic, 4 Asian, ",
+      stop("Numeric `race` codes must be 0-6: ",
+           "0/1 White, 2 Black, 3 Hispanic, 4 Asian, ",
            "5 American Indian/Alaskan Native, 6 Native Hawaiian/Pacific Islander.",
            call. = FALSE)
     }
@@ -140,7 +141,7 @@
 #'   `"Asian"`, `"American Indian or Alaskan Native"`,
 #'   `"Native Hawaiian or Pacific Islander"` (plus common aliases such as
 #'   `"Caucasian"`, `"African American"`, `"Latino"`, `"Pacific Islander"`).
-#'   Numeric codes: `1` White, `2` Black, `3` Hispanic, `4` Asian,
+#'   Numeric codes: `1` (or `0`) White, `2` Black, `3` Hispanic, `4` Asian,
 #'   `5` American Indian/Alaskan Native, `6` Native Hawaiian/Pacific Islander.
 #' @param education Highest education on a 6-level ordinal scale:
 #'   `1` < high-school, `2` high-school graduate, `3` some training after

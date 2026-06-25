@@ -26,7 +26,7 @@ Accepted labels (case-insensitive): \code{"White"}, \code{"Black"}, \code{"Hispa
 \code{"Asian"}, \code{"American Indian or Alaskan Native"},
 \code{"Native Hawaiian or Pacific Islander"} (plus common aliases such as
 \code{"Caucasian"}, \code{"African American"}, \code{"Latino"}, \code{"Pacific Islander"}).
-Numeric codes: \code{1} White, \code{2} Black, \code{3} Hispanic, \code{4} Asian,
+Numeric codes: \code{1} (or \code{0}) White, \code{2} Black, \code{3} Hispanic, \code{4} Asian,
 \code{5} American Indian/Alaskan Native, \code{6} Native Hawaiian/Pacific Islander.}
 
 \item{education}{Highest education on a 6-level ordinal scale:

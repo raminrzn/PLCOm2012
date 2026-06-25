@@ -55,8 +55,12 @@ test_that("the function is vectorised and recycles scalars", {
   expect_gt(r[2], r[1])
 })
 
+test_that("race code 0 is accepted as the White reference", {
+  expect_equal(base(0), base("White"))
+})
+
 test_that("invalid inputs are rejected", {
-  expect_error(base(0), "race")                 # never-smoker handled separately
+  expect_error(base(7), "race")                 # 7 is out of the 0-6 range
   expect_error(base("Klingon"), "Unrecognised")
   expect_error(
     plcom2012(age = 62, race = "White", education = 4, bmi = 27, copd = 0,

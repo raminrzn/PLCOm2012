@@ -4,14 +4,17 @@
 \alias{model_run}
 \title{Run the PLCOm2012 model (ModelsCloud entry point)}
 \usage{
-model_run(model_input = NULL)
+model_run(model_input = NULL, ...)
 }
 \arguments{
 \item{model_input}{A named list (one patient) or data frame (one row per
 patient) whose columns are the PLCOm2012 predictors. See \code{\link[=plcom2012]{plcom2012()}}
 for the meaning and coding of each field, or call \code{\link[=get_sample_input]{get_sample_input()}} /
-\code{\link[=get_default_input]{get_default_input()}} for ready-made examples. If \code{NULL}, the model's
-\code{\link[=get_default_input]{get_default_input()}} is used.}
+\code{\link[=get_default_input]{get_default_input()}} for ready-made examples. If \code{NULL} and no fields are
+supplied via \code{...}, the model's \code{\link[=get_default_input]{get_default_input()}} is used.}
+
+\item{...}{Alternative to \code{model_input}: the predictor fields supplied
+directly as named arguments (e.g. from an unwrapped API call).}
 }
 \value{
 A data frame: the input columns plus \code{risk} (6-year probability in
@@ -24,9 +27,32 @@ predicted 6-year lung cancer risk. This is the synchronous prediction
 pattern expected by ModelsCloud: a table of patients in, the same table
 plus predictions out.
 }
+\details{
+The function is deliberately forgiving about how inputs arrive, so it works
+whether the platform wraps the fields under \code{model_input} or passes them
+directly:
+\itemize{
+\item \strong{Wrapped} — \code{model_run(model_input = list(age = 62, ...))} or a data
+frame (the form produced by the \code{modelscloud} client).
+\item \strong{Unwrapped} — \code{model_run(age = 62, race = 1, ...)} (the form produced by
+a raw \code{do.call(model_run, funcInput)} when \code{funcInput} holds the fields
+directly).
+}
+
+Common aliases are accepted and mapped to the canonical names: \code{edu6}/\code{edu}
+-> \code{education}, \code{cpd} -> \code{smoking_intensity}, \code{smkyears} ->
+\code{duration_smoking}, \code{qtyears} -> \code{smoking_quit_time}, \code{phist} ->
+\code{cancer_hist}, \code{famhx} -> \code{family_hist_lung_cancer}, \code{smkstat} ->
+\code{smoking_status}. Unrecognised extra fields (e.g. \code{female}, which PLCOm2012
+does not use) are ignored.
+}
 \examples{
 model_run(get_sample_input())
 model_run(get_default_input())
+# Unwrapped + aliases (e.g. a raw API call); `female` is ignored:
+model_run(age = 62, race = 1, edu6 = 3, bmi = 27, copd = 0, phist = 0,
+          famhx = 1, smkstat = 1, cpd = 20, smkyears = 40, qtyears = 0,
+          female = 0)
 }
 \seealso{
 \code{\link[=plcom2012]{plcom2012()}}, \code{\link[=get_sample_input]{get_sample_input()}}, \code{\link[=get_default_input]{get_default_input()}}

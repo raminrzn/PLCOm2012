@@ -15,6 +15,38 @@
   "duration_smoking", "smoking_quit_time"
 )
 
+# Accepted aliases (alias -> canonical), so common lcmodels-style payloads work.
+.plco_alias <- c(
+  edu6 = "education", edu = "education", education_level = "education",
+  cpd = "smoking_intensity", cigs_per_day = "smoking_intensity",
+  smkyears = "duration_smoking", duration = "duration_smoking",
+  qtyears = "smoking_quit_time", quit_time = "smoking_quit_time",
+  years_quit = "smoking_quit_time",
+  phist = "cancer_hist", prior_cancer = "cancer_hist",
+  cancer_history = "cancer_hist",
+  famhx = "family_hist_lung_cancer", fam_hist = "family_hist_lung_cancer",
+  family_history = "family_hist_lung_cancer",
+  smkstat = "smoking_status", smkstatus = "smoking_status",
+  smoke_status = "smoking_status"
+)
+
+# Normalise an incoming payload: accept either a wrapped `model_input` object or
+# fields passed directly as named arguments (`dots`); rename known aliases to
+# canonical names; drop any unrecognised extra fields (e.g. `female`). Returns
+# NULL when no input at all was supplied.
+.plco_normalize <- function(model_input, dots) {
+  if (is.null(model_input)) {
+    if (length(dots) == 0) return(NULL)
+    model_input <- dots
+  }
+  df <- as.data.frame(model_input, stringsAsFactors = FALSE)
+  for (a in intersect(names(df), names(.plco_alias))) {
+    canon <- .plco_alias[[a]]
+    if (!canon %in% names(df)) names(df)[match(a, names(df))] <- canon
+  }
+  df[, intersect(names(df), .plco_vars), drop = FALSE]
+}
+
 #' Run the PLCOm2012 model (ModelsCloud entry point)
 #'
 #' Scores one or more patients and returns the input augmented with the
@@ -22,11 +54,31 @@
 #' pattern expected by ModelsCloud: a table of patients in, the same table
 #' plus predictions out.
 #'
+#' @details
+#' The function is deliberately forgiving about how inputs arrive, so it works
+#' whether the platform wraps the fields under `model_input` or passes them
+#' directly:
+#'
+#' * **Wrapped** — `model_run(model_input = list(age = 62, ...))` or a data
+#'   frame (the form produced by the `modelscloud` client).
+#' * **Unwrapped** — `model_run(age = 62, race = 1, ...)` (the form produced by
+#'   a raw `do.call(model_run, funcInput)` when `funcInput` holds the fields
+#'   directly).
+#'
+#' Common aliases are accepted and mapped to the canonical names: `edu6`/`edu`
+#' -> `education`, `cpd` -> `smoking_intensity`, `smkyears` ->
+#' `duration_smoking`, `qtyears` -> `smoking_quit_time`, `phist` ->
+#' `cancer_hist`, `famhx` -> `family_hist_lung_cancer`, `smkstat` ->
+#' `smoking_status`. Unrecognised extra fields (e.g. `female`, which PLCOm2012
+#' does not use) are ignored.
+#'
 #' @param model_input A named list (one patient) or data frame (one row per
 #'   patient) whose columns are the PLCOm2012 predictors. See [plcom2012()]
 #'   for the meaning and coding of each field, or call [get_sample_input()] /
-#'   [get_default_input()] for ready-made examples. If `NULL`, the model's
-#'   [get_default_input()] is used.
+#'   [get_default_input()] for ready-made examples. If `NULL` and no fields are
+#'   supplied via `...`, the model's [get_default_input()] is used.
+#' @param ... Alternative to `model_input`: the predictor fields supplied
+#'   directly as named arguments (e.g. from an unwrapped API call).
 #'
 #' @return A data frame: the input columns plus `risk` (6-year probability in
 #'   `[0, 1]`) and `risk_percent` (the same value as a percentage, rounded to
@@ -36,21 +88,19 @@
 #' @examples
 #' model_run(get_sample_input())
 #' model_run(get_default_input())
+#' # Unwrapped + aliases (e.g. a raw API call); `female` is ignored:
+#' model_run(age = 62, race = 1, edu6 = 3, bmi = 27, copd = 0, phist = 0,
+#'           famhx = 1, smkstat = 1, cpd = 20, smkyears = 40, qtyears = 0,
+#'           female = 0)
 #' @export
-model_run <- function(model_input = NULL) {
-  if (is.null(model_input)) model_input <- get_default_input()
-
-  unknown <- setdiff(names(model_input), .plco_vars)
-  if (length(unknown) > 0) {
-    stop("Unknown input variable(s): ", paste(unknown, collapse = ", "),
-         ". Accepted: ", paste(.plco_vars, collapse = ", "), call. = FALSE)
-  }
-
-  df <- as.data.frame(model_input, stringsAsFactors = FALSE)
+model_run <- function(model_input = NULL, ...) {
+  df <- .plco_normalize(model_input, list(...))
+  if (is.null(df)) df <- as.data.frame(get_default_input(), stringsAsFactors = FALSE)
 
   missing <- setdiff(.plco_vars, names(df))
   if (length(missing) > 0) {
     stop("Missing required variable(s): ", paste(missing, collapse = ", "),
+         ". Accepted names (incl. aliases) are documented in ?model_run.",
          call. = FALSE)
   }
 
